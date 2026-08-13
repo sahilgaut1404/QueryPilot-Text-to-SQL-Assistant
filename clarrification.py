@@ -6,10 +6,7 @@ from langchain_mistralai import ChatMistralAI
 
 load_dotenv()
 
-
-# ---------------------------------------
 # Intent model
-# ---------------------------------------
 
 class Intent(BaseModel):
 
@@ -48,9 +45,8 @@ class Intent(BaseModel):
     )
 
 
-# ---------------------------------------
-# Mistral
-# ---------------------------------------
+
+#LLM MODEL
 
 llm = ChatMistralAI(
     model="mistral-small-2603",
@@ -58,10 +54,7 @@ llm = ChatMistralAI(
 
 structured_llm = llm.with_structured_output(Intent)
 
-
-# ---------------------------------------
 # Analyze question
-# ---------------------------------------
 
 def analyze_question(question, previous_context=None):
 
