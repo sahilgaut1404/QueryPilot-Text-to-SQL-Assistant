@@ -5,18 +5,13 @@ df = pd.read_csv("sales.csv")
 
 print("Original shape:", df.shape)
 
-# --------------------------------------------------
-# 1. Remove unnecessary columns
-# --------------------------------------------------
+
 
 df.drop(
     columns=["Row ID+O6G3A1:R6", "ind1", "ind2"],
     inplace=True
 )
 
-# --------------------------------------------------
-# 2. Convert date columns
-# --------------------------------------------------
 
 df["Order Date"] = pd.to_datetime(
     df["Order Date"],
@@ -30,18 +25,13 @@ df["Ship Date"] = pd.to_datetime(
     dayfirst=True
 )
 
-# --------------------------------------------------
-# 3. Convert Returns into a binary flag
-# --------------------------------------------------
+
 
 df["Returned"] = df["Returns"].notna().astype(int)
 
 # Remove original Returns column
 df.drop(columns=["Returns"], inplace=True)
 
-# --------------------------------------------------
-# 4. Rename columns
-# --------------------------------------------------
 
 df.rename(columns={
     "Order ID": "order_id",
@@ -65,9 +55,7 @@ df.rename(columns={
     "Payment Mode": "payment_mode"
 }, inplace=True)
 
-# --------------------------------------------------
-# 5. Check result
-# --------------------------------------------------
+
 
 print("\nCleaned shape:", df.shape)
 
@@ -83,9 +71,7 @@ print(df.isnull().sum())
 print("\nFirst 10 rows:")
 print(df.head(10))
 
-# --------------------------------------------------
-# 6. Save cleaned dataset
-# --------------------------------------------------
+
 
 df.to_csv("cleaned_sales_data.csv", index=False)
 
