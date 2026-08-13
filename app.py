@@ -24,19 +24,29 @@ load_dotenv()
 # Database
 # ============================================================
 
-username = os.getenv("MYSQL_USER")
-password = os.getenv("MYSQL_PASSWORD")
-host = os.getenv("MYSQL_HOST")
-port = os.getenv("MYSQL_PORT")
-database = os.getenv("MYSQL_DATABASE")
+username = os.getenv("MYSQL_USER", st.secrets.get("MYSQL_USER"))
+password = os.getenv("MYSQL_PASSWORD", st.secrets.get("MYSQL_PASSWORD"))
+host = os.getenv("MYSQL_HOST", st.secrets.get("MYSQL_HOST"))
+port = os.getenv("MYSQL_PORT", st.secrets.get("MYSQL_PORT"))
+database = os.getenv("MYSQL_DATABASE", st.secrets.get("MYSQL_DATABASE"))
 
 
 @st.cache_resource
 def get_engine():
 
+    ca_cert = st.secrets.get("AIVEN_CA_CERT")
+
+    connect_args = {}
+
+    if ca_cert:
+        connect_args["ssl"] = {
+            "ca": ca_cert
+        }
+
     return create_engine(
         f"mysql+pymysql://{username}:{password}@"
-        f"{host}:{port}/{database}"
+        f"{host}:{port}/{database}",
+        connect_args=connect_args
     )
 
 
