@@ -24,34 +24,46 @@ load_dotenv()
 # Database
 # ============================================================
 
-username = os.getenv("MYSQL_USER", st.secrets.get("MYSQL_USER"))
-password = os.getenv("MYSQL_PASSWORD", st.secrets.get("MYSQL_PASSWORD"))
-host = os.getenv("MYSQL_HOST", st.secrets.get("MYSQL_HOST"))
-port = os.getenv("MYSQL_PORT", st.secrets.get("MYSQL_PORT"))
-database = os.getenv("MYSQL_DATABASE", st.secrets.get("MYSQL_DATABASE"))
+import os
+import tempfile
+
+import streamlit as st
+from sqlalchemy import create_engine
+
+
+username = st.secrets["MYSQL_USER"]
+password = st.secrets["MYSQL_PASSWORD"]
+host = st.secrets["MYSQL_HOST"]
+port = st.secrets["MYSQL_PORT"]
+database = st.secrets["MYSQL_DATABASE"]
 
 
 @st.cache_resource
 def get_engine():
 
-    ca_cert = st.secrets.get("AIVEN_CA_CERT")
+    ca_cert = st.secrets["AIVEN_CA_CERT"]
 
-    connect_args = {}
+    ca_file = tempfile.NamedTemporaryFile(
+        mode="w",
+        suffix=".pem",
+        delete=False
+    )
 
-    if ca_cert:
-        connect_args["ssl"] = {
-            "ca": ca_cert
-        }
+    ca_file.write(ca_cert)
+    ca_file.close()
 
     return create_engine(
         f"mysql+pymysql://{username}:{password}@"
         f"{host}:{port}/{database}",
-        connect_args=connect_args
+        connect_args={
+            "ssl": {
+                "ca": ca_file.name
+            }
+        }
     )
 
 
 engine = get_engine()
-
 
 # ============================================================
 # Valid database columns
