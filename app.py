@@ -244,7 +244,7 @@ st.markdown("""
 <div class="app-header">
     <div class="icon-badge">🗄️</div>
     <div>
-        <h1>AI Text-to-SQL</h1>
+        <h1>QueryPilot-Text-to-SQL-Assistant</h1>
         <p>Ask questions about your sales data in plain English — I'll write and run the SQL for you.</p>
     </div>
 </div>
