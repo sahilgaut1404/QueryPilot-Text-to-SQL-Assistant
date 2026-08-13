@@ -27,9 +27,7 @@ ALLOWED_COLUMNS = {
 }
 def validate_columns(parsed):
 
-    # ---------------------------------------
     # Collect SQL aliases
-    # ---------------------------------------
 
     aliases = set()
 
@@ -40,9 +38,7 @@ def validate_columns(parsed):
         if alias_name:
             aliases.add(alias_name.lower())
 
-    # ---------------------------------------
     # Validate columns
-    # ---------------------------------------
 
     for column in parsed.find_all(exp.Column):
 
@@ -81,7 +77,6 @@ def clean_sql(sql):
 
 def validate_sql(sql):
 
-    # Clean Markdown code fences
     sql = clean_sql(sql)
 
     try:
