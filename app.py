@@ -5,7 +5,6 @@ import streamlit as st
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
-
 from clarrification import analyze_question
 from sql_generator import generate_sql
 from repair_loop import validate_and_repair
@@ -13,17 +12,11 @@ from date_utils import get_date_context
 from response_generator import generate_response
 from conversation_memory import ConversationMemory
 
-
-# ============================================================
-# Configuration
-# ============================================================
-
 load_dotenv()
 
 
-# ============================================================
+
 # Database
-# ============================================================
 
 username = st.secrets["MYSQL_USER"]
 password = st.secrets["MYSQL_PASSWORD"]
@@ -53,10 +46,7 @@ def get_engine():
 
 engine = get_engine()
 
-
-# ============================================================
 # Valid database columns
-# ============================================================
 
 VALID_COLUMNS = {
     "order_id", "order_date", "ship_date", "ship_mode", "customer_id",
@@ -74,9 +64,7 @@ COLUMN_GROUPS = {
 }
 
 
-# ============================================================
 # Helper functions
-# ============================================================
 
 def clean_sql(sql):
 
@@ -124,21 +112,17 @@ def get_invalid_schema_term(answer):
     return None
 
 
-# ============================================================
+
 # Streamlit page
-# ============================================================
 
 st.set_page_config(
-    page_title="AI Text-to-SQL",
+    page_title="
+    QueryPilot-Text-to-SQL-Assistant",
     page_icon="🗄️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-
-# ============================================================
-# Global styling
-# ============================================================
 
 st.markdown("""
 <style>
@@ -241,9 +225,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ============================================================
 # Session memory
-# ============================================================
 
 if "memory" not in st.session_state:
     st.session_state.memory = ConversationMemory()
@@ -257,10 +239,7 @@ if "pending_question" not in st.session_state:
 if "pending_intent" not in st.session_state:
     st.session_state.pending_intent = None
 
-
-# ============================================================
 # Header
-# ============================================================
 
 st.markdown("""
 <div class="app-header">
@@ -272,10 +251,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-
-# ============================================================
 # Sidebar
-# ============================================================
 
 with st.sidebar:
 
@@ -330,10 +306,7 @@ with st.sidebar:
         st.session_state.pending_intent = None
         st.rerun()
 
-
-# ============================================================
 # Display conversation history
-# ============================================================
 
 if not st.session_state.messages:
     st.info("👋 Ask a question below, or try one of the suggestions in the sidebar to get started.")
@@ -344,9 +317,6 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 
-# ============================================================
-# User input
-# ============================================================
 
 question = st.chat_input("Ask your database...")
 
@@ -354,25 +324,19 @@ if not question and st.session_state.get("_example_prompt"):
     question = st.session_state.pop("_example_prompt")
 
 
-# ============================================================
-# Process question
-# ============================================================
+
 
 if question:
 
-    # ----------------------------------------
     # Display user question
-    # ----------------------------------------
 
     st.session_state.messages.append({"role": "user", "content": question})
 
     with st.chat_message("user", avatar="🧑‍💻"):
         st.markdown(question)
 
-
-    # ----------------------------------------
     # Security check
-    # ----------------------------------------
+
 
     if is_dangerous_request(question):
 
@@ -386,9 +350,7 @@ if question:
         st.stop()
 
 
-    # ----------------------------------------
     # Check if this is a clarification answer
-    # ----------------------------------------
 
     if st.session_state.pending_question:
 
@@ -464,9 +426,7 @@ User clarification:
             st.stop()
 
 
-    # ========================================================
     # Run the pipeline with live status
-    # ========================================================
 
     with st.chat_message("assistant", avatar="🤖"):
 
@@ -529,9 +489,7 @@ User clarification:
 
             status.update(label="Done", state="complete", expanded=False)
 
-        # ----------------------------------------------------
         # Final answer + supporting detail, tabbed
-        # ----------------------------------------------------
 
         st.markdown(answer)
 
@@ -563,10 +521,7 @@ User clarification:
                 st.write(f"**Time period:** {intent.time_period}")
                 st.write(f"**Ranking:** {intent.ranking}")
 
-    # ========================================================
     # Save message + memory
-    # ========================================================
-
     st.session_state.messages.append({"role": "assistant", "content": answer})
 
     st.session_state.memory.add(
