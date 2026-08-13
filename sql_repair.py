@@ -4,9 +4,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-# ---------------------------------------
-# Mistral
-# ---------------------------------------
 
 llm = ChatMistralAI(
     model="mistral-small-2603",
@@ -14,9 +11,7 @@ llm = ChatMistralAI(
 )
 
 
-# ---------------------------------------
 # Repair SQL
-# ---------------------------------------
 
 def repair_sql(sql, error_message, original_question):
 
