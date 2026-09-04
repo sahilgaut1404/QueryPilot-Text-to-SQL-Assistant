@@ -5,7 +5,7 @@ load_dotenv()
 
 
 llm = ChatMistralAI(
-    model="mistral-small-latest",
+    model="ministral-3b-2512",
     temperature=0
 )
 
