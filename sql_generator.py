@@ -1,19 +1,21 @@
-from langchain_mistralai import ChatMistralAI
+from langchain_huggingface import ChatHuggingFace,HuggingFaceEndpoint
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
-
-
-llm = ChatMistralAI(
-    model="mistral-small-2603",
+model=HuggingFaceEndpoint(
+    repo_id="deepseek-ai/DeepSeek-R1"
+)
+llm = ChatHuggingFace(
+    llm=model,
+    temperature=0
 )
 
 
-# Generate SQL
 
 def generate_sql(question, intent, date_context):
+
 
 
     today = date_context["today"]
@@ -27,7 +29,6 @@ def generate_sql(question, intent, date_context):
     previous_month_year = date_context["previous_month_year"]
 
     # Calculate last-month boundaries
-    
     if previous_month == 12:
 
         next_month = 1
@@ -46,7 +47,8 @@ def generate_sql(question, intent, date_context):
         f"{next_month_year}-{next_month:02d}-01"
     )
 
-    # Date context
+  
+
     date_information = f"""
 Today:
 {today}
@@ -69,8 +71,6 @@ Last month start:
 Last month end:
 {last_month_end}
 """
-
-    # Prompt
 
     prompt = f"""
 You are an expert MySQL SQL generator.

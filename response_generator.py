@@ -1,14 +1,15 @@
 from dotenv import load_dotenv
-from langchain_mistralai import ChatMistralAI
+from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 
 load_dotenv()
 
-
-llm = ChatMistralAI(
-    model="mistral-small-2603",
+model=HuggingFaceEndpoint(
+    repo_id="deepseek-ai/DeepSeek-R1"
 )
-
-
+llm = ChatHuggingFace(
+    llm=model,
+    temperature=0
+)
 def generate_response(question, result):
 
     prompt = f"""

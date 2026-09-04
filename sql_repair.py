@@ -1,17 +1,20 @@
-from langchain_mistralai import ChatMistralAI
+from langchain_huggingface import HuggingFaceEndpoint,ChatHuggingFace
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
-
-llm = ChatMistralAI(
-    model="mistral-small-2603",
+# ---------------------------------------
+# Mistral
+# ---------------------------------------
+model=HuggingFaceEndpoint(
+    repo_id="deepseek-ai/DeepSeek-R1"
+)
+llm = ChatHuggingFace(
+    llm=model,
     temperature=0
 )
 
-
-# Repair SQL
 
 def repair_sql(sql, error_message, original_question):
 

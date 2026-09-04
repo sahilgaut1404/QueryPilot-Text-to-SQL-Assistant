@@ -27,7 +27,6 @@ ALLOWED_COLUMNS = {
 }
 def validate_columns(parsed):
 
-    # Collect SQL aliases
 
     aliases = set()
 
@@ -38,17 +37,14 @@ def validate_columns(parsed):
         if alias_name:
             aliases.add(alias_name.lower())
 
-    # Validate columns
+
 
     for column in parsed.find_all(exp.Column):
 
         column_name = column.name.lower()
-
-        # Ignore SELECT *
         if column_name == "*":
             continue
 
-        # Allow real database columns
         if column_name in ALLOWED_COLUMNS:
             continue
 
@@ -90,12 +86,11 @@ def validate_sql(sql):
 
         return False, f"Invalid SQL syntax: {e}"
 
-    # Only SELECT
+
     if not isinstance(parsed, exp.Select):
 
         return False, "Only SELECT queries are allowed."
 
-    # Check tables
     tables = {
         table.name.lower()
         for table in parsed.find_all(exp.Table)
@@ -110,7 +105,6 @@ def validate_sql(sql):
             f"{', '.join(unauthorized_tables)}"
         )
 
-    # Check columns
     columns_valid, column_message = validate_columns(parsed)
 
     if not columns_valid:

@@ -13,6 +13,7 @@ df.drop(
 )
 
 
+
 df["Order Date"] = pd.to_datetime(
     df["Order Date"],
     format="mixed",
@@ -31,6 +32,7 @@ df["Returned"] = df["Returns"].notna().astype(int)
 
 # Remove original Returns column
 df.drop(columns=["Returns"], inplace=True)
+
 
 
 df.rename(columns={
@@ -54,9 +56,6 @@ df.rename(columns={
     "Profit": "profit",
     "Payment Mode": "payment_mode"
 }, inplace=True)
-
-
-
 print("\nCleaned shape:", df.shape)
 
 print("\nColumns:")
@@ -70,7 +69,6 @@ print(df.isnull().sum())
 
 print("\nFirst 10 rows:")
 print(df.head(10))
-
 
 
 df.to_csv("cleaned_sales_data.csv", index=False)

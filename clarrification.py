@@ -2,11 +2,11 @@ from typing import List, Optional
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from langchain_mistralai import ChatMistralAI
+from langchain_huggingface import ChatHuggingFace,HuggingFaceEndpoint
 
 load_dotenv()
 
-# Intent model
+
 
 class Intent(BaseModel):
 
@@ -46,15 +46,17 @@ class Intent(BaseModel):
 
 
 
-#LLM MODEL
-
-llm = ChatMistralAI(
-    model="mistral-small-2603",
+model=HuggingFaceEndpoint(
+    repo_id="deepseek-ai/DeepSeek-R1"
+)
+llm = ChatHuggingFace(
+    llm=model,
+    temperature=0
 )
 
 structured_llm = llm.with_structured_output(Intent)
 
-# Analyze question
+
 
 def analyze_question(question, previous_context=None):
 

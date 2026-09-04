@@ -12,16 +12,10 @@ from response_generator import generate_response
 from conversation_memory import ConversationMemory
 
 
-# ---------------------------------------
-# Load environment variables
-# ---------------------------------------
 
 load_dotenv()
 
 
-# ---------------------------------------
-# MySQL connection
-# ---------------------------------------
 
 username = os.getenv("MYSQL_USER")
 password = os.getenv("MYSQL_PASSWORD")
@@ -34,9 +28,6 @@ engine = create_engine(
 )
 
 
-# ---------------------------------------
-# Valid database columns
-# ---------------------------------------
 
 VALID_COLUMNS = {
     "order_id",
@@ -62,9 +53,6 @@ VALID_COLUMNS = {
 }
 
 
-# ---------------------------------------
-# Clean SQL
-# ---------------------------------------
 
 def clean_sql(sql):
 
@@ -82,9 +70,6 @@ def clean_sql(sql):
     return sql
 
 
-# ---------------------------------------
-# Dangerous request detection
-# ---------------------------------------
 
 def is_dangerous_request(question):
 
@@ -107,15 +92,9 @@ def is_dangerous_request(question):
     )
 
 
-# ---------------------------------------
-# Check invalid schema terms
-# ---------------------------------------
-
 def get_invalid_schema_term(answer):
 
     answer_lower = answer.lower().strip()
-
-    # Known invalid attributes that users may try
     invalid_terms = [
         "customer_age",
         "customer age",
@@ -132,7 +111,6 @@ def get_invalid_schema_term(answer):
 
         if term in answer_lower:
 
-            # Ignore it if it is actually a valid column
             if term not in VALID_COLUMNS:
 
                 return term
@@ -140,30 +118,18 @@ def get_invalid_schema_term(answer):
     return None
 
 
-# ---------------------------------------
-# Conversation memory
-# ---------------------------------------
 
 memory = ConversationMemory()
 
 
-# ---------------------------------------
-# Main conversation loop
-# ---------------------------------------
 
 def main():
 
     while True:
 
-        # ---------------------------------------
-        # 1. Get user question
-        # ---------------------------------------
-
         question = input("\nYou: ")
 
-        # ---------------------------------------
-        # Exit
-        # ---------------------------------------
+    
 
         if question.lower().strip() in [
             "exit",
@@ -174,9 +140,6 @@ def main():
             print("\nAI: Goodbye!")
             break
 
-        # ---------------------------------------
-        # 2. Security gate
-        # ---------------------------------------
 
         if is_dangerous_request(question):
 
@@ -189,15 +152,9 @@ def main():
 
         final_question = question
 
-        # ---------------------------------------
-        # 3. Previous conversation
-        # ---------------------------------------
 
         last = memory.get_last()
 
-        # ---------------------------------------
-        # 4. Analyze question
-        # ---------------------------------------
 
         intent = analyze_question(
             question,
@@ -207,9 +164,7 @@ def main():
         print("\nIntent:")
         print(intent)
 
-        # ---------------------------------------
-        # 5. Clarification
-        # ---------------------------------------
+
 
         while intent.needs_clarification:
 
@@ -220,9 +175,7 @@ def main():
 
             clarification_answer = input("\nYou: ")
 
-            # ---------------------------------------
-            # Exit during clarification
-            # ---------------------------------------
+        
 
             if clarification_answer.lower().strip() in [
                 "exit",
@@ -233,9 +186,7 @@ def main():
                 print("\nAI: Goodbye!")
                 return
 
-            # ---------------------------------------
-            # Security check clarification
-            # ---------------------------------------
+    
 
             if is_dangerous_request(
                 clarification_answer
@@ -248,12 +199,6 @@ def main():
 
                 continue
 
-            # ---------------------------------------
-            # IMPORTANT:
-            # Check the clarification against
-            # the database schema BEFORE sending
-            # it back to the LLM.
-            # ---------------------------------------
 
             invalid_term = get_invalid_schema_term(
                 clarification_answer
@@ -279,14 +224,9 @@ def main():
                     "state, "
                     "region"
                 )
-
-                # Stay inside clarification loop
                 continue
 
-            # ---------------------------------------
-            # Combine original question +
-            # clarification
-            # ---------------------------------------
+    
 
             final_question = f"""
 Original question:
@@ -296,9 +236,7 @@ User clarification:
 {clarification_answer}
 """
 
-            # ---------------------------------------
-            # Analyze again
-            # ---------------------------------------
+
 
             intent = analyze_question(
                 final_question,
@@ -308,13 +246,6 @@ User clarification:
             print("\nFinal Intent:")
             print(intent)
 
-            # ---------------------------------------
-            # DO NOT force:
-            #
-            # intent.needs_clarification = False
-            #
-            # Let the analyzer decide.
-            # ---------------------------------------
 
             if intent.needs_clarification:
 
@@ -322,15 +253,10 @@ User clarification:
 
             break
 
-        # ---------------------------------------
-        # 6. Get date context
-        # ---------------------------------------
 
         date_context = get_date_context()
 
-        # ---------------------------------------
-        # 7. Generate SQL
-        # ---------------------------------------
+
 
         sql = generate_sql(
             final_question,
@@ -341,9 +267,6 @@ User clarification:
         print("\nGenerated SQL:")
         print(sql)
 
-        # ---------------------------------------
-        # 8. Validate + repair
-        # ---------------------------------------
 
         valid, final_sql = validate_and_repair(
             sql,
@@ -359,18 +282,11 @@ User clarification:
 
             continue
 
-        # ---------------------------------------
-        # 9. Clean SQL
-        # ---------------------------------------
-
         final_sql = clean_sql(final_sql)
 
         print("\nFinal SQL:")
         print(final_sql)
 
-        # ---------------------------------------
-        # 10. Execute SQL
-        # ---------------------------------------
 
         try:
 
@@ -393,9 +309,6 @@ User clarification:
 
             continue
 
-        # ---------------------------------------
-        # 11. Generate natural-language response
-        # ---------------------------------------
 
         try:
 
@@ -414,9 +327,6 @@ User clarification:
 
             continue
 
-        # ---------------------------------------
-        # 12. Save conversation memory
-        # ---------------------------------------
 
         memory.add(
             question=final_question,
@@ -426,9 +336,7 @@ User clarification:
         )
 
 
-# ---------------------------------------
-# Run
-# ---------------------------------------
+
 
 if __name__ == "__main__":
     main()

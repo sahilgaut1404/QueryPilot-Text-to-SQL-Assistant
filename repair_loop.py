@@ -17,12 +17,10 @@ def validate_and_repair(sql, original_question):
 
         print("Validation:", message)
 
-        # Valid SQL
-
         if valid:
             return True, current_sql
 
-        # Dangerous / non-SELECT SQL
+
 
         if message == "Only SELECT queries are allowed.":
 
@@ -30,8 +28,6 @@ def validate_and_repair(sql, original_question):
             print("Repair will NOT be attempted.")
 
             return False, None
-
-        # Attempt repair for other errors
 
         print("\nSQL needs repair.")
 
