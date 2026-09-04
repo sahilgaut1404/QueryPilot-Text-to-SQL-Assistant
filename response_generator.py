@@ -8,7 +8,7 @@ llm = ChatMistralAI(
     temperature=0
 )
 
-)
+
 def generate_response(question, result):
 
     prompt = f"""
