@@ -5,7 +5,7 @@ load_dotenv()
 
 
 model=HuggingFaceEndpoint(
-    repo_id="deepseek-ai/DeepSeek-R1"
+    repo_id="Qwen/Qwen2.5-7B-Instruct"
 )
 llm = ChatHuggingFace(
     llm=model,
