@@ -1,8 +1,10 @@
 from typing import List, Optional
+import json
+import re
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from langchain_huggingface import ChatHuggingFace,HuggingFaceEndpoint
+from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 
 load_dotenv()
 
@@ -46,15 +48,16 @@ class Intent(BaseModel):
 
 
 
-model=HuggingFaceEndpoint(
+model = HuggingFaceEndpoint(
     repo_id="deepseek-ai/DeepSeek-R1"
 )
+
 llm = ChatHuggingFace(
     llm=model,
     temperature=0
 )
 
-structured_llm = llm.with_structured_output(Intent)
+
 
 
 
@@ -164,7 +167,6 @@ region exists.
 Therefore:
 
 needs_clarification = false
-
 entity = customer
 
 Another example:
@@ -253,9 +255,67 @@ ranking = highest
 The user's current question should be interpreted using previous
 context when appropriate.
 
+IMPORTANT OUTPUT FORMAT:
+
+Return ONLY a valid JSON object.
+
+Do NOT use markdown.
+Do NOT use ```json.
+Do NOT include explanations outside the JSON.
+
+The JSON must contain exactly these fields:
+
+{{
+  "entity": null,
+  "metric": null,
+  "time_period": null,
+  "ranking": null,
+  "needs_clarification": false,
+  "ambiguous_terms": [],
+  "clarification_question": ""
+}}
+
 User question:
 
 {question}
 """
 
-    return structured_llm.invoke(prompt)
+ 
+    response = llm.invoke(prompt)
+
+    content = response.content
+
+    #
+
+
+    content = re.sub(
+        r"<think>.*?</think>",
+        "",
+        content,
+        flags=re.DOTALL
+    ).strip()
+
+   
+
+    content = content.replace("```json", "")
+    content = content.replace("```", "")
+    content = content.strip()
+
+ 
+
+    match = re.search(
+        r"\{.*\}",
+        content,
+        re.DOTALL
+    )
+
+    if not match:
+        raise ValueError(
+            f"Could not extract JSON from model response:\n{content}"
+        )
+
+    json_data = json.loads(match.group(0))
+
+
+
+    return Intent(**json_data)
