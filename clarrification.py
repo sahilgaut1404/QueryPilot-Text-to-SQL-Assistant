@@ -48,7 +48,7 @@ class Intent(BaseModel):
 
 model = HuggingFaceEndpoint(
     repo_id="Qwen/Qwen2.5-7B-Instruct",
-    max_new_tokens=2048,
+    max_new_tokens=512,
     temperature=0
 )
 llm = ChatHuggingFace(
