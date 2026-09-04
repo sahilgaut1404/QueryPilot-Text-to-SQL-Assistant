@@ -1,10 +1,8 @@
 from typing import List, Optional
-import json
-import re
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
+from langchain_mistralai import ChatMistralAI
 
 load_dotenv()
 
@@ -46,93 +44,12 @@ class Intent(BaseModel):
     )
 
 
-model = HuggingFaceEndpoint(
-    repo_id="Qwen/Qwen2.5-7B-Instruct",
-    max_new_tokens=512,
-    temperature=0
-)
-llm = ChatHuggingFace(
-    llm=model,
+llm = ChatMistralAI(
+    model="mistral-small-latest",
     temperature=0
 )
 
-
-def extract_json(text):
-
-    if not text:
-        raise ValueError("Model returned an empty response.")
-
-    text = str(text).strip()
-
-    text = re.sub(
-        r"<think>.*?</think>",
-        "",
-        text,
-        flags=re.DOTALL | re.IGNORECASE
-    ).strip()
-
-    text = re.sub(
-        r"```json\s*",
-        "",
-        text,
-        flags=re.IGNORECASE
-    )
-
-    text = text.replace("```", "").strip()
-
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-
-    start = text.find("{")
-
-    if start == -1:
-        raise ValueError(
-            f"Model did not return JSON.\n\nModel response:\n{text[:2000]}"
-        )
-
-    depth = 0
-    in_string = False
-    escape = False
-
-    for i in range(start, len(text)):
-
-        char = text[i]
-
-        if escape:
-            escape = False
-            continue
-
-        if char == "\\":
-            escape = True
-            continue
-
-        if char == '"':
-            in_string = not in_string
-            continue
-
-        if not in_string:
-
-            if char == "{":
-                depth += 1
-
-            elif char == "}":
-                depth -= 1
-
-                if depth == 0:
-
-                    candidate = text[start:i + 1]
-
-                    try:
-                        return json.loads(candidate)
-                    except json.JSONDecodeError:
-                        pass
-
-    raise ValueError(
-        f"Could not extract valid JSON from model response.\n\n"
-        f"Model response:\n{text[:2000]}"
-    )
+structured_llm = llm.with_structured_output(Intent)
 
 
 def analyze_question(question, previous_context=None):
@@ -188,7 +105,7 @@ returned
 
 {previous_context_text}
 
-Analyze ONLY the user's current question.
+Analyze the user's question.
 
 Extract:
 
@@ -204,31 +121,31 @@ IMPORTANT SCHEMA RULES:
 You MUST NOT invent columns.
 
 If the user asks for a column or attribute that does NOT exist
-in the valid column list, set needs_clarification to true.
+in the valid column list, clarification is required.
+
+If an invalid column is requested:
+
+needs_clarification = true
+
+Add the invalid column to ambiguous_terms.
+
+The clarification_question should explain that the requested
+attribute is not available and ask the user what valid attribute
+they want.
+
+Do NOT silently replace an invalid column with another column.
 
 Example:
 
 User:
 "Show me customers by customer_age"
 
-customer_age does NOT exist.
+customer_age does not exist.
 
 Return:
 
 needs_clarification = true
 ambiguous_terms = ["customer_age"]
-
-The clarification_question should explain that customer_age is
-not available and ask which valid attribute the user wants.
-
-Do NOT silently replace customer_age with:
-
-segment
-region
-country
-customer_name
-
-Do NOT generate a generic customer query.
 
 Example:
 
@@ -274,13 +191,13 @@ IMPORTANT CLARIFICATION RULE:
 
 After a clarification question, the user may provide another answer.
 
-You MUST analyze the new answer normally.
+Analyze that answer normally.
 
-Do NOT assume the clarification answer is valid.
+Do NOT automatically assume that the answer is valid.
 
 Example:
 
-Previous question:
+Original:
 "Show me customers by customer_age"
 
 Assistant:
@@ -291,18 +208,15 @@ User:
 
 customer_age is still invalid.
 
-Return:
+Therefore:
 
 needs_clarification = true
-ambiguous_terms = ["customer_age"]
 
-Do NOT generate SQL.
-
-If the user instead says:
+But if the user says:
 
 "region"
 
-Return:
+then:
 
 needs_clarification = false
 entity = "customer"
@@ -320,65 +234,19 @@ Previous:
 Current:
 "What about profit?"
 
-Return:
+Interpret this as:
 
 entity = "customer"
 metric = "profit"
 ranking = "highest"
 needs_clarification = false
 
-Do not add information that is not supported by the current
-question or previous context.
+Do not invent information that is not supported by the question
+or conversation context.
 
-IMPORTANT OUTPUT RULE:
-
-Return ONLY the final JSON object.
-
-Do NOT provide an explanation.
-
-Do NOT provide reasoning.
-
-Do NOT think step by step in the response.
-
-Do NOT use markdown.
-
-Do NOT use code fences.
-
-Do NOT write anything before the JSON.
-
-Do NOT write anything after the JSON.
-
-The response MUST start with {{ and end with }}.
-
-Use exactly these seven fields:
-
-{{
-  "entity": null,
-  "metric": null,
-  "time_period": null,
-  "ranking": null,
-  "needs_clarification": false,
-  "ambiguous_terms": [],
-  "clarification_question": ""
-}}
-
-All string values must use double quotes.
-
-ambiguous_terms must always be a JSON array.
-
-needs_clarification must always be true or false.
-
-Return the JSON now.
-
-User question:
+Analyze this user question:
 
 {question}
 """
 
-    response = llm.invoke(prompt)
-
-    content = response.content
-
-    json_data = extract_json(content)
-
-    return Intent(**json_data)
+    return structured_llm.invoke(prompt)

@@ -1,14 +1,13 @@
 from dotenv import load_dotenv
-from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
+from langchain_mistralai import ChatMistralAI
 
 load_dotenv()
 
-model=HuggingFaceEndpoint(
-   repo_id="Qwen/Qwen2.5-7B-Instruct"
-)
-llm = ChatHuggingFace(
-    llm=model,
+llm = ChatMistralAI(
+    model="mistral-small-latest",
     temperature=0
+)
+
 )
 def generate_response(question, result):
 
