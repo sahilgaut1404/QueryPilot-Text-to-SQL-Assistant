@@ -9,7 +9,6 @@ from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 load_dotenv()
 
 
-
 class Intent(BaseModel):
 
     entity: Optional[str] = Field(
@@ -47,9 +46,10 @@ class Intent(BaseModel):
     )
 
 
-
 model = HuggingFaceEndpoint(
-    repo_id="deepseek-ai/DeepSeek-R1"
+    repo_id="deepseek-ai/DeepSeek-R1",
+    max_new_tokens=600,
+    temperature=0
 )
 
 llm = ChatHuggingFace(
@@ -58,7 +58,82 @@ llm = ChatHuggingFace(
 )
 
 
+def extract_json(text):
 
+    if not text:
+        raise ValueError("Model returned an empty response.")
+
+    text = str(text).strip()
+
+    text = re.sub(
+        r"<think>.*?</think>",
+        "",
+        text,
+        flags=re.DOTALL | re.IGNORECASE
+    ).strip()
+
+    text = re.sub(
+        r"```json\s*",
+        "",
+        text,
+        flags=re.IGNORECASE
+    )
+
+    text = text.replace("```", "").strip()
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    start = text.find("{")
+
+    if start == -1:
+        raise ValueError(
+            f"Model did not return JSON.\n\nModel response:\n{text[:2000]}"
+        )
+
+    depth = 0
+    in_string = False
+    escape = False
+
+    for i in range(start, len(text)):
+
+        char = text[i]
+
+        if escape:
+            escape = False
+            continue
+
+        if char == "\\":
+            escape = True
+            continue
+
+        if char == '"':
+            in_string = not in_string
+            continue
+
+        if not in_string:
+
+            if char == "{":
+                depth += 1
+
+            elif char == "}":
+                depth -= 1
+
+                if depth == 0:
+
+                    candidate = text[start:i + 1]
+
+                    try:
+                        return json.loads(candidate)
+                    except json.JSONDecodeError:
+                        pass
+
+    raise ValueError(
+        f"Could not extract valid JSON from model response.\n\n"
+        f"Model response:\n{text[:2000]}"
+    )
 
 
 def analyze_question(question, previous_context=None):
@@ -206,7 +281,7 @@ answer.
 
 You MUST analyze that answer normally.
 
-Do NOT assume the clarification is automatically valid.
+Do NOT assume that the clarification is automatically valid.
 
 For example:
 
@@ -255,15 +330,19 @@ ranking = highest
 The user's current question should be interpreted using previous
 context when appropriate.
 
-IMPORTANT OUTPUT FORMAT:
+IMPORTANT:
 
-Return ONLY a valid JSON object.
+Return ONLY ONE JSON OBJECT.
 
-Do NOT use markdown.
-Do NOT use ```json.
-Do NOT include explanations outside the JSON.
+Do NOT explain your reasoning.
 
-The JSON must contain exactly these fields:
+Do NOT return markdown.
+
+Do NOT use ```.
+
+Do NOT write anything before or after the JSON.
+
+Use exactly this structure:
 
 {{
   "entity": null,
@@ -280,42 +359,10 @@ User question:
 {question}
 """
 
- 
     response = llm.invoke(prompt)
 
     content = response.content
 
-    #
-
-
-    content = re.sub(
-        r"<think>.*?</think>",
-        "",
-        content,
-        flags=re.DOTALL
-    ).strip()
-
-   
-
-    content = content.replace("```json", "")
-    content = content.replace("```", "")
-    content = content.strip()
-
- 
-
-    match = re.search(
-        r"\{.*\}",
-        content,
-        re.DOTALL
-    )
-
-    if not match:
-        raise ValueError(
-            f"Could not extract JSON from model response:\n{content}"
-        )
-
-    json_data = json.loads(match.group(0))
-
-
+    json_data = extract_json(content)
 
     return Intent(**json_data)
