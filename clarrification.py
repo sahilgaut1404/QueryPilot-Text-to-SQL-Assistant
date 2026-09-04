@@ -48,10 +48,9 @@ class Intent(BaseModel):
 
 model = HuggingFaceEndpoint(
     repo_id="deepseek-ai/DeepSeek-R1",
-    max_new_tokens=600,
+    max_new_tokens=2048,
     temperature=0
 )
-
 llm = ChatHuggingFace(
     llm=model,
     temperature=0
@@ -189,7 +188,7 @@ returned
 
 {previous_context_text}
 
-Analyze the user's question.
+Analyze ONLY the user's current question.
 
 Extract:
 
@@ -205,7 +204,7 @@ IMPORTANT SCHEMA RULES:
 You MUST NOT invent columns.
 
 If the user asks for a column or attribute that does NOT exist
-in the valid column list, clarification is required.
+in the valid column list, set needs_clarification to true.
 
 Example:
 
@@ -214,14 +213,13 @@ User:
 
 customer_age does NOT exist.
 
-Therefore:
+Return:
 
 needs_clarification = true
-
 ambiguous_terms = ["customer_age"]
 
-clarification_question should explain that customer_age is
-not available and ask the user what valid attribute they want.
+The clarification_question should explain that customer_age is
+not available and ask which valid attribute the user wants.
 
 Do NOT silently replace customer_age with:
 
@@ -232,86 +230,87 @@ customer_name
 
 Do NOT generate a generic customer query.
 
-Another example:
+Example:
 
 User:
 "Show me customers by region"
 
 region exists.
 
-Therefore:
+Return:
 
 needs_clarification = false
-entity = customer
+entity = "customer"
 
-Another example:
+Example:
 
 User:
 "Show me the best customers"
 
 "best" is ambiguous because it could mean:
 
-- highest sales
-- highest profit
-- most orders
-- highest quantity
+highest sales
+highest profit
+most orders
+highest quantity
 
 Therefore:
 
 needs_clarification = true
 
-Another example:
+Example:
 
 User:
 "Show me customers with the highest sales"
 
-This is clear.
-
-Therefore:
+Return:
 
 needs_clarification = false
-entity = customer
-metric = sales
-ranking = highest
+entity = "customer"
+metric = "sales"
+ranking = "highest"
 
 IMPORTANT CLARIFICATION RULE:
 
-After a clarification question, the user may provide another
-answer.
+After a clarification question, the user may provide another answer.
 
-You MUST analyze that answer normally.
+You MUST analyze the new answer normally.
 
-Do NOT assume that the clarification is automatically valid.
+Do NOT assume the clarification answer is valid.
 
-For example:
+Example:
 
-Original:
+Previous question:
 "Show me customers by customer_age"
 
-AI:
+Assistant:
 "customer_age is not available. What attribute would you like?"
 
 User:
 "customer_age"
 
-This is STILL invalid.
+customer_age is still invalid.
 
-Therefore:
+Return:
 
 needs_clarification = true
+ambiguous_terms = ["customer_age"]
 
 Do NOT generate SQL.
 
-But if the user says:
+If the user instead says:
 
 "region"
 
-then:
+Return:
 
 needs_clarification = false
-entity = customer
+entity = "customer"
 
-Conversation context can be used for follow-up questions.
+IMPORTANT FOLLOW-UP RULE:
+
+Use previous conversation context when the current question
+clearly refers to the previous question.
 
 Example:
 
@@ -321,28 +320,37 @@ Previous:
 Current:
 "What about profit?"
 
-Interpret this as:
+Return:
 
-entity = customer
-metric = profit
-ranking = highest
+entity = "customer"
+metric = "profit"
+ranking = "highest"
+needs_clarification = false
 
-The user's current question should be interpreted using previous
-context when appropriate.
+Do not add information that is not supported by the current
+question or previous context.
 
-IMPORTANT:
+IMPORTANT OUTPUT RULE:
 
-Return ONLY ONE JSON OBJECT.
+Return ONLY the final JSON object.
 
-Do NOT explain your reasoning.
+Do NOT provide an explanation.
 
-Do NOT return markdown.
+Do NOT provide reasoning.
 
-Do NOT use ```.
+Do NOT think step by step in the response.
 
-Do NOT write anything before or after the JSON.
+Do NOT use markdown.
 
-Use exactly this structure:
+Do NOT use code fences.
+
+Do NOT write anything before the JSON.
+
+Do NOT write anything after the JSON.
+
+The response MUST start with {{ and end with }}.
+
+Use exactly these seven fields:
 
 {{
   "entity": null,
@@ -353,6 +361,14 @@ Use exactly this structure:
   "ambiguous_terms": [],
   "clarification_question": ""
 }}
+
+All string values must use double quotes.
+
+ambiguous_terms must always be a JSON array.
+
+needs_clarification must always be true or false.
+
+Return the JSON now.
 
 User question:
 
