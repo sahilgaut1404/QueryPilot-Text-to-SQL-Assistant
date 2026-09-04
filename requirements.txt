@@ -8,3 +8,4 @@ langchain-mistralai
 pydantic
 sqlglot
 langchain-huggingface
+huggingface-hub
